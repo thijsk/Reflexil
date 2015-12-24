@@ -19,31 +19,23 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
-#region Imports
-
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Forms;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Reflexil.Forms;
 using Reflexil.Utils;
 
-#endregion
-
 namespace Reflexil.Editors
 {
 	public partial class InstructionGridControl : BaseInstructionGridControl
 	{
-	    
-
-	    #region Methods
 
 		public InstructionGridControl()
 		{
 			InitializeComponent();
-            _copiedItems = new List<Instruction>();
+			_copiedItems = new List<Instruction>();
 		}
 
 		protected override void GridContextMenuStrip_Opened(object sender, EventArgs e)
@@ -54,8 +46,8 @@ namespace Reflexil.Editors
 			MenDelete.Enabled = (!ReadOnly) && (SelectedItems.Length > 0);
 			MenDeleteAll.Enabled = (!ReadOnly) && (OwnerDefinition != null) && (OwnerDefinition.Body != null);
 
-		    MenCopy.Enabled = (!ReadOnly) && (SelectedItems.Length > 0);
-		    MenPaste.Enabled = (!ReadOnly) && (FirstSelectedItem != null) && (_copiedItems.Count > 0);
+			MenCopy.Enabled = (!ReadOnly) && (SelectedItems.Length > 0);
+			MenPaste.Enabled = (!ReadOnly) && (_copiedItems.Count > 0);
 		}
 
 		protected override void MenCreate_Click(object sender, EventArgs e)
@@ -129,10 +121,6 @@ namespace Reflexil.Editors
 			}
 		}
 
-		#endregion
-
-		#region Events
-
 		public delegate void BodyReplacedEventHandler(object sender, EventArgs e);
 
 		public event BodyReplacedEventHandler BodyReplaced;
@@ -166,28 +154,30 @@ namespace Reflexil.Editors
 			RaiseGridUpdated();
 		}
 
-	    private readonly List<Instruction> _copiedItems;
+		private readonly List<Instruction> _copiedItems;
 
-	    private void MenCopy_Click(object sender, EventArgs e)
-	    {
-            _copiedItems.Clear();
-            foreach (var item in SelectedItems)
-	        {
-	            _copiedItems.Add(item);
-	        }
-	    }
+		private void MenCopy_Click(object sender, EventArgs e)
+		{
+			_copiedItems.Clear();
+			foreach (var item in SelectedItems)
+				_copiedItems.Add(new Instruction(item.OpCode, item.Operand));
+		}
 
-	    private void MenPaste_Click(object sender, EventArgs e)
-	    {
-	        foreach (var item in _copiedItems)
-	        {
-                var copy = new Instruction(item.OpCode, item.Operand);
-	            OwnerDefinition.Body.GetILProcessor().InsertAfter(FirstSelectedItem, copy);
-	        }
-            RaiseGridUpdated();
-        }
+		private void MenPaste_Click(object sender, EventArgs e)
+		{
+			foreach (var item in _copiedItems)
+			{
+				var copy = new Instruction(item.OpCode, item.Operand);
+				var processor = OwnerDefinition.Body.GetILProcessor();
 
-		#endregion
+				if (FirstSelectedItem != null)
+					processor.InsertAfter(FirstSelectedItem, copy);
+				else
+					processor.Append(copy);
+			}
+			RaiseGridUpdated();
+		}
+
 	}
 
 	#region VS Designer generic support
